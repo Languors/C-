@@ -1,0 +1,15 @@
+/*
+思路：
+            n    n < 10
+DigiSum(n) = 
+           DibiSum(n/10)+n%10   // 前n-1位之和+第N位
+*/
+
+
+int DigitSum(int n)//1729
+{
+	if(n>9)
+		return DigitSum(n/10)+n%10;
+	else
+		return n;
+}
