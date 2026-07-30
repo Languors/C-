@@ -4,7 +4,7 @@
 假设第i项为temp，则第i+1项为temp*10+a
 具体参考以下代码
 */
-int main()
+int main() 
 {
 	int a = 0;
 	int n = 0;
