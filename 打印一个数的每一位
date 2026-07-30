@@ -1,0 +1,14 @@
+/*
+思路：
+              N   N <= 9
+Print(N)
+              Print(N-1), 打印N
+*/
+
+ void print(unsigned int n)
+ {
+ 	if(n>9)
+ 		print(n/10);
+ 	printf("%d ", n%10);
+ }
+
