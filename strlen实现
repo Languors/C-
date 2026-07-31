@@ -1,0 +1,9 @@
+/*
+思路：该题比较简单，参考代码
+*/
+size_t my_strlen (const char * str)
+{
+        const char *eos = str;
+        while( *eos++ ) ;
+        return( eos - str - 1 );
+}
