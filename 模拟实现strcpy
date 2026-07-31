@@ -1,0 +1,18 @@
+//1.参数顺序
+//2.函数的功能，停止条件
+//3.assert
+//4.const修饰指针
+//5.函数返回值
+//6.题目出自《高质量C/C++编程》书籍最后的试题部分
+char* my_strcpy(char* dest, const char* src)
+{ 
+ char* ret = dest;
+ assert(dest != NULL);
+ assert(src != NULL);
+ 
+ while((*dest++ = *src++))
+ {
+  ;
+ }
+ return ret;
+}
