@@ -1,0 +1,18 @@
+char * mystrncat(char * dst, const char * src, size_t n)
+{
+	char * tmp = dst;
+   
+  while (*dst)
+  {
+    dst++;
+  }
+   
+  int i;
+  for (i = 0; src[i] && i < n; i++)
+  {
+    dst[i] = src[i];
+  }
+   
+  dst[i] = 0;
+  return tmp;
+}
