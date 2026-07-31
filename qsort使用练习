@@ -1,7 +1,6 @@
-//模仿qsort的功能实现一个通用的冒泡排序
-
 //用char*写的qsort，完全还原原函数的参数。
 #include<stdio.h>
+
 //仿qsort函数重写冒泡排序
 int cmp(void* e1, void* e2)//所选择的比较方法
 {
