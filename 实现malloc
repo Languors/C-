@@ -1,0 +1,114 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+//#include <unistd.h>
+#include <stdint.h>
+
+// 1. 实现malloc：分配指定大小的未初始化内存
+void* my_malloc(size_t size) {
+    mem_block_t* current;
+    size_t aligned_size;
+
+    // 边界条件：分配0字节，按标准返回NULL（或可返回有效指针，此处遵循POSIX标准）
+    if (size == 0) {
+        return NULL;
+    }
+
+    aligned_size = ALIGN(size); // 内存对齐，保证返回地址满足对齐要求
+
+    // 第一步：遍历空闲链表，寻找**首次适配**的空闲块（首次适配算法，简单高效）
+    current = free_list;
+    while (current) {
+        // 找到大小足够的空闲块
+        if (current->is_allocated == 0 && current->size >= aligned_size) {
+            current->is_allocated = 1; // 标记为已分配
+            // 返回**实际可用内存的指针**（跳过元数据块）
+            return (uint8_t*)current + sizeof(mem_block_t);
+        }
+        current = current->next;
+    }
+
+    // 第二步：空闲链表无足够空间，扩展堆内存
+    current = extend_heap(aligned_size);
+    if (current == NULL) { // 堆扩展失败，内存不足
+        return NULL;
+    }
+
+    // 标记新块为已分配，返回实际可用指针
+    current->is_allocated = 1;
+    return (uint8_t*)current + sizeof(mem_block_t);
+}
+
+
+
+// 内存对齐值：64位系统8字节，32位系统可改为4
+#define ALIGNMENT 8
+// 向上取整到对齐值的宏：(x + 对齐值 -1) 后按对齐值取整
+#define ALIGN(size) (((size) + (ALIGNMENT - 1)) & ~(ALIGNMENT - 1))
+
+// 内存块元数据结构（双向链表）：放在实际内存块的**前面**
+typedef struct mem_block {
+    size_t size;         // 实际可用内存大小（不含元数据本身）
+    int is_allocated;    // 块是否被分配：1-已分配，0-空闲
+    struct mem_block* prev; // 前一个内存块指针
+    struct mem_block* next; // 后一个内存块指针
+} mem_block_t;
+
+// 全局空闲块链表头节点（初始为空），所有空闲块通过此链表管理
+static mem_block_t* free_list = NULL;
+
+// 工具函数：从用户拿到的指针，反向获取其对应的元数据块
+static mem_block_t* ptr_to_block(void* ptr) {
+    // 元数据在实际内存块前面，指针向前偏移元数据大小即可
+    return (mem_block_t*)((uint8_t*)ptr - sizeof(mem_block_t));
+}
+
+// 工具函数：空闲块合并（核心，解决内存碎片）
+// 入参：待合并的空闲块，返回合并后的大区块
+static mem_block_t* coalesce(mem_block_t* block) {
+    // 1. 合并后向块：如果后块存在且空闲
+    if (block->next && block->next->is_allocated == 0) {
+        block->size += sizeof(mem_block_t) + block->next->size; // 总大小=当前块+后块元数据+后块大小
+        block->next = block->next->next;
+        if (block->next) {
+            block->next->prev = block; // 更新后块的前指针
+        }
+    }
+    // 2. 合并前向块：如果前块存在且空闲
+    if (block->prev && block->prev->is_allocated == 0) {
+        block->prev->size += sizeof(mem_block_t) + block->size; // 总大小=前块+当前块元数据+当前块大小
+        block->prev->next = block->next;
+        if (block->next) {
+            block->next->prev = block->prev; // 更新后块的前指针
+        }
+        block = block->prev; // 合并后，前块成为新的块头
+    }
+    return block;
+}
+
+// 工具函数：扩展堆内存（调用sbrk）
+// 入参：需要的内存大小（不含元数据），返回新分配的元数据块
+static mem_block_t* extend_heap(size_t size) {
+    void* ptr;
+    mem_block_t* block;
+    size_t aligned_size = ALIGN(size); // 先对齐大小
+
+    // 调用sbrk扩展堆：需要的总大小=元数据大小+对齐后的实际大小
+    ptr = sbrk(sizeof(mem_block_t) + aligned_size);
+    if (ptr == (void*)-1) { // sbrk失败返回-1，此时内存分配失败
+        return NULL;
+    }
+
+    // 初始化新的内存块元数据
+    block = (mem_block_t*)ptr;
+    block->size = aligned_size;
+    block->is_allocated = 0; // 初始为空闲，后续分配时标记为已分配
+    block->prev = NULL;
+    block->next = free_list; // 插入到空闲链表头部
+    if (free_list) {
+        free_list->prev = block;
+    }
+    free_list = block; // 更新空闲链表头
+
+    return coalesce(block); // 合并（防止堆扩展后与原有空闲块连续）
+}
