@@ -1,0 +1,34 @@
+#define _CRT_SECURE_NO_WARNINGS 
+#include <stdio.h>
+int main()
+{
+	FILE* pr = fopen("data.txt", "r");
+	if (NULL == pr)
+	{
+		perror("fopen for read");
+		return 1;
+	}
+	FILE* pw = fopen("data_copy.txt", "w");
+	if (NULL == pw)
+	{
+		perror("fopen for write");
+		fclose(pr);
+		return 1;
+	}
+	//读和写
+	int ch = 0;
+	while ((ch = fgetc(pr)) != EOF)
+	{
+		fputc(ch, pw);
+	}
+	//关闭文件
+	fclose(pr);
+	fclose(pw);
+	pr = NULL;
+	pw = NULL;
+
+
+
+
+	return 0;
+}
